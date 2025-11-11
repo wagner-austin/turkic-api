@@ -2,7 +2,7 @@
 
 import pytest
 
-from turkic_translit.core import to_ipa
+from core.translit import to_ipa
 
 # ---------------------------------------------------------------------------
 # 1.  Single-letter gold standard (Zimmer & Orgun 1992)
