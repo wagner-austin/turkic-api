@@ -42,6 +42,24 @@ def test_process_corpus_entry(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
 
     monkeypatch.setattr(jobs_mod, "LocalCorpusService", _Svc)
     monkeypatch.setattr(jobs_mod, "to_ipa", lambda s, _l: s)
+    # Avoid network in test: pretend corpus file exists
+    monkeypatch.setattr(
+        jobs_mod,
+        "ensure_corpus_file",
+        lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
+    )
+    # Avoid network in test: pretend corpus file exists
+    monkeypatch.setattr(
+        jobs_mod,
+        "ensure_corpus_file",
+        lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
+    )
+    # Avoid network in test: pretend corpus file exists
+    monkeypatch.setattr(
+        jobs_mod,
+        "ensure_corpus_file",
+        lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
+    )
 
     params = {
         "source": "oscar",

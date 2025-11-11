@@ -44,6 +44,7 @@ def process_corpus_impl(
     max_val = params.get("max_sentences", 1000)
     translit_val = params.get("transliterate", True)
     thr_val = params.get("confidence_threshold", 0.95)
+    script_val = params.get("script")
 
     if not isinstance(src_val, str) or not isinstance(lang_val, str):
         raise TypeError("source and language must be strings")
@@ -61,6 +62,21 @@ def process_corpus_impl(
     if not isinstance(thr_val, (int, float)):
         raise TypeError("confidence_threshold must be a number")
     thr = float(thr_val)
+    # Validate optional script filter
+    script: str | None
+    if script_val is None:
+        script = None
+    elif isinstance(script_val, str):
+        s = script_val.strip()
+        if not s:
+            script = None
+        else:
+            norm = s[0:1].upper() + s[1:].lower()
+            if norm not in ("Latn", "Cyrl", "Arab"):
+                raise ValueError("Invalid script; expected 'Latn', 'Cyrl', or 'Arab'")
+            script = norm
+    else:
+        raise TypeError("script must be a string or null")
     if not is_source(src_raw) or not is_language(lang_raw):
         raise ValueError("Invalid source or language in job parameters")
     spec = ProcessSpec(
@@ -73,7 +89,7 @@ def process_corpus_impl(
 
     # Ensure local corpus exists (download if missing)
     try:
-        ensure_corpus_file(spec, settings.data_dir)
+        ensure_corpus_file(spec, settings.data_dir, script=script)
     except Exception as exc:
         redis.hset(
             f"job:{job_id}",

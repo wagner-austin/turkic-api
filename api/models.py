@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 class JobCreate(BaseModel):
     source: Literal["oscar", "wikipedia"]
     language: Literal["kk", "ky", "uz", "tr", "ug"]
+    script: Literal["Latn", "Cyrl", "Arab"] | None = None
     max_sentences: int = Field(ge=1, le=100000, default=1000)
     transliterate: bool = True
     confidence_threshold: float = Field(ge=0.0, le=1.0, default=0.95)
