@@ -173,3 +173,127 @@ def test_download_failure_marks_job_failed(
     assert h is not None
     assert h.get("status") == "failed"
     assert h.get("error") == "RuntimeError"
+
+
+def test_invalid_script_type_raises(tmp_path: Path) -> None:
+    redis = _RedisStub()
+    settings = Settings(
+        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+    )
+    logger = logging.getLogger(__name__)
+
+    with pytest.raises(TypeError, match="script must be a string or null"):
+        jobs_mod.process_corpus_impl(
+            "a",
+            {
+                "source": "oscar",
+                "language": "kk",
+                "max_sentences": 1,
+                "transliterate": True,
+                "confidence_threshold": 0.9,
+                "script": 123,
+            },
+            redis=redis,
+            settings=settings,
+            logger=logger,
+        )
+
+
+def test_invalid_script_value_raises(tmp_path: Path) -> None:
+    redis = _RedisStub()
+    settings = Settings(
+        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+    )
+    logger = logging.getLogger(__name__)
+
+    with pytest.raises(ValueError, match="Invalid script"):
+        jobs_mod.process_corpus_impl(
+            "a",
+            {
+                "source": "oscar",
+                "language": "kk",
+                "max_sentences": 1,
+                "transliterate": True,
+                "confidence_threshold": 0.9,
+                "script": "Greek",  # not in allowed set
+            },
+            redis=redis,
+            settings=settings,
+            logger=logger,
+        )
+
+
+def test_valid_script_normalizes_and_passes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    redis = _RedisStub()
+    settings = Settings(
+        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+    )
+    logger = logging.getLogger(__name__)
+
+    class _Svc:
+        def __init__(self, _data_dir: str) -> None: ...
+        def stream(self, _spec: object):
+            yield "line"
+
+    monkeypatch.setattr(jobs_mod, "LocalCorpusService", _Svc)
+    monkeypatch.setattr(jobs_mod, "to_ipa", lambda s, _l: s)
+
+    def _ensure(spec: object, data_dir: str, *, script: str | None) -> Path:
+        assert script == "Latn"
+        return tmp_path / "corpus" / "oscar_kk.txt"
+
+    monkeypatch.setattr(jobs_mod, "ensure_corpus_file", _ensure)
+
+    params = {
+        "source": "oscar",
+        "language": "kk",
+        "script": "latn",
+        "max_sentences": 1,
+        "transliterate": True,
+        "confidence_threshold": 0.0,
+    }
+
+    result = jobs_mod.process_corpus_impl(
+        "s1", params, redis=redis, settings=settings, logger=logger
+    )
+    assert result["status"] == "completed"
+
+
+def test_blank_script_string_is_treated_as_none(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    redis = _RedisStub()
+    settings = Settings(
+        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+    )
+    logger = logging.getLogger(__name__)
+
+    class _Svc:
+        def __init__(self, _data_dir: str) -> None: ...
+        def stream(self, _spec: object):
+            yield "line"
+
+    monkeypatch.setattr(jobs_mod, "LocalCorpusService", _Svc)
+    monkeypatch.setattr(jobs_mod, "to_ipa", lambda s, _l: s)
+
+    def _ensure(spec: object, data_dir: str, *, script: str | None) -> Path:
+        assert script is None
+        return tmp_path / "corpus" / "oscar_kk.txt"
+
+    monkeypatch.setattr(jobs_mod, "ensure_corpus_file", _ensure)
+
+    params = {
+        "source": "oscar",
+        "language": "kk",
+        "script": "   ",  # blank should normalize to None
+        "max_sentences": 1,
+        "transliterate": True,
+        "confidence_threshold": 0.0,
+    }
+
+    result = jobs_mod.process_corpus_impl(
+        "s2", params, redis=redis, settings=settings, logger=logger
+    )
+    assert result["status"] == "completed"
