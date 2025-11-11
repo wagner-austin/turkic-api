@@ -23,6 +23,7 @@ lint: install
 	poetry run ruff check --fix .
 	poetry run ruff format
 	poetry run mypy --strict
+	poetry run python -m tools.guard
 	
 # Check and validate environment
 check-environment:
@@ -74,38 +75,32 @@ lock: check-poetry
 
 install: pre-install lock
 	@echo "Installing dependencies..."
-	@poetry install --extras corpus --extras dev --no-ansi || \
+	@poetry install --no-ansi --no-root || \
 		(echo "Installation failed. Attempting recovery..." && \
 		echo "Removing virtual environment..." && \
 		-@poetry env remove --all --quiet && \
 		echo "Clearing Poetry cache..." && \
 		poetry cache clear pypi --all --no-interaction && \
 		echo "Retrying installation..." && \
-		poetry install --extras corpus --extras dev --no-ansi)
-ifeq ($(OS),Windows_NT)
-	@echo "Installing PyICU for Windows..."
-	-@poetry run python -m turkic_translit.cli.pyicu_install
-endif
+		poetry install --no-ansi --no-root)
 	@echo "Verifying installation..."
-	@poetry run python -c "import turkic_tools; print('[OK] Installation successful!')" || (echo "ERROR: Installation verification failed" && exit 1)
+	@poetry run python -c "import api, core; print('[OK] Installation successful!')" || (echo "ERROR: Installation verification failed" && exit 1)
 
 # Run tests
 test: install
-	poetry run pytest -rsxv
+	poetry run python -I -m pytest -vv -p pytest_cov --cov=api --cov=core --cov-branch --cov-report=term-missing
 
-check: lint test
+check: lint | test
 
 # Build distributable package
 build: clean install
 	poetry run python -m build
 
 # Run the web UI with DEBUG logs
-debug: install
-	poetry run python turkic_tools.py web
+debug:
+	@echo "No web demo in API service."
 
-# Run the web UI example
 web: debug
-	poetry run python turkic_tools.py web
 
 # Run the web UI example
 run: web
