@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -11,6 +10,8 @@ from redis import Redis
 
 from api.config import Settings
 from api.dependencies import get_queue, get_redis, get_request_logger, get_settings
+from api.errors import HealthStatusError, health_exception_handler
+from api.health import compute_health
 from api.logging import setup_logging
 from api.models import HealthResponse, JobCreate, JobResponse, JobStatus
 from api.services import JobService
@@ -20,6 +21,8 @@ from api.types import QueueProtocol
 def create_app() -> FastAPI:
     setup_logging()
     app = FastAPI(title="Turkic API", version="1.0.0")
+    # Centralized exception handler for health probe results
+    app.add_exception_handler(HealthStatusError, health_exception_handler)
 
     @app.post("/api/v1/jobs", response_model=JobResponse)
     async def create_job(
@@ -37,19 +40,10 @@ def create_app() -> FastAPI:
     @app.get("/api/v1/health", response_model=HealthResponse)
     async def health(
         redis: Annotated[Redis, Depends(get_redis)],
+        settings: Annotated[Settings, Depends(get_settings)],
+        logger: Annotated[logging.Logger, Depends(get_request_logger)],
     ) -> HealthResponse:
-        redis_ok = bool(redis.ping())
-        volume_ok = Path("/data").exists()
-        status: Literal["healthy", "degraded", "unhealthy"]
-        if redis_ok and volume_ok:
-            status = "healthy"
-        elif redis_ok or volume_ok:
-            status = "degraded"
-        else:
-            status = "unhealthy"
-        return HealthResponse(
-            status=status, redis=redis_ok, volume=volume_ok, timestamp=datetime.utcnow()
-        )
+        return compute_health(redis=redis, settings=settings, logger=logger)
 
     @app.get("/api/v1/jobs/{job_id}", response_model=JobStatus)
     async def get_job(
