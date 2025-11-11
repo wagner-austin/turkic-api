@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
 
-# ---------- Builder: install dependencies with Poetry into a venv ----------
+# ---------- Builder: resolve and install dependencies into a venv ----------
 FROM python:3.11-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -17,14 +17,11 @@ RUN python -m venv /opt/venv \
 
 WORKDIR /app
 
-# Install only runtime dependencies
+# Export locked runtime dependencies and install into /opt/venv using pip
 COPY pyproject.toml poetry.lock ./
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-root --no-ansi
-
-# Copy application code (for type discovery during runtime)
-COPY api api
-COPY core core
+RUN poetry export --only main --without-hashes -f requirements.txt -o requirements.txt \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt \
+    && /opt/venv/bin/python -c "import uvicorn, rq; print('deps ok')"
 
 # ---------- Runtime: minimal image with ICU runtime + venv ----------
 FROM python:3.11-slim-bookworm AS runtime
