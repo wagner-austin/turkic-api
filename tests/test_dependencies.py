@@ -22,7 +22,9 @@ class _RedisStub:
 def test_get_redis_closes_client(monkeypatch: pytest.MonkeyPatch) -> None:
     created: list[_RedisStub] = []
 
-    def _from_url(_url: str, *, encoding: str, decode_responses: bool) -> _RedisStub:
+    def _from_url(
+        _url: str, *, encoding: str, decode_responses: bool, **_kwargs: object
+    ) -> _RedisStub:
         stub = _RedisStub()
         created.append(stub)
         return stub
