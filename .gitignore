@@ -11,6 +11,8 @@ data/raw_wiki/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
 # Package files
 *.whl
