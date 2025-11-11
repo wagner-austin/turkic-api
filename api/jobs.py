@@ -9,6 +9,7 @@ from redis import Redis
 from api.config import Settings
 from api.logging import get_logger
 from core.corpus import LocalCorpusService
+from core.corpus_download import ensure_corpus_file
 from core.models import ProcessSpec, is_language, is_source
 from core.translit import to_ipa
 
@@ -69,6 +70,21 @@ def process_corpus_impl(
         transliterate=transliterate,
         confidence_threshold=thr,
     )
+
+    # Ensure local corpus exists (download if missing)
+    try:
+        ensure_corpus_file(spec, settings.data_dir)
+    except Exception as exc:
+        redis.hset(
+            f"job:{job_id}",
+            mapping={
+                "status": "failed",
+                "updated_at": datetime.utcnow().isoformat(),
+                "message": "download_failed",
+                "error": type(exc).__name__,
+            },
+        )
+        raise
 
     svc = LocalCorpusService(settings.data_dir)
 
