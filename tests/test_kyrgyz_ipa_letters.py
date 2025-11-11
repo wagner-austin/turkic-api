@@ -6,7 +6,7 @@ Reference: Help:IPA/Kyrgyz (rev. 6 Jan 2025), updated for the 2025-06 long-vowel
 
 import pytest
 
-from turkic_translit.core import to_ipa
+from core.translit import to_ipa
 
 GOLD = {
     "а": "ɑ",
