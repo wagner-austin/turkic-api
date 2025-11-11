@@ -34,6 +34,10 @@ dependencies = [
     "rq>=2.0.0",
     # Transliteration engine
     "PyICU>=2.13,<2.16; sys_platform != 'win32'",
+    # Language ID and corpus download
+    "fasttext-wheel>=0.9.2",
+    "datasets>=3.0.0",
+    "pyarrow>=14.0.0",
     # Dev/test tooling (installed in this service repo to enable make commands)
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
@@ -120,7 +124,9 @@ pydantic = "^2.9.0"
 redis = "^5.2.0"
 rq = "^2.0.0"
 PyICU = {version = ">=2.13,<2.16", markers = "sys_platform != 'win32'"}
+fasttext-wheel = "^0.9.2"
 datasets = "^3.0.0"
+pyarrow = "^18.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
