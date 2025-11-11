@@ -13,7 +13,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m venv /opt/venv \
-    && /opt/venv/bin/pip install --upgrade pip poetry
+    && /opt/venv/bin/pip install --upgrade pip poetry poetry-plugin-export
 
 WORKDIR /app
 
