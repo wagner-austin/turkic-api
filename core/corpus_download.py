@@ -11,7 +11,7 @@ from xml.etree import ElementTree as ET
 
 import requests
 
-from core.langid import build_lang_filter
+from core.langid import build_lang_script_filter
 from core.models import ProcessSpec
 
 # NOTE: We deliberately avoid Any/casts/ignores. External library usage is
@@ -84,7 +84,9 @@ def _write_lines(dest: Path, lines: Iterable[str], limit: int) -> int:
     return count
 
 
-def ensure_corpus_file(spec: ProcessSpec, data_dir: str) -> Path:
+def ensure_corpus_file(
+    spec: ProcessSpec, data_dir: str, script: str | None = None
+) -> Path:
     """Ensure a local corpus file exists for the given spec.
 
     Creates data_dir/corpus/{source}_{language}.txt if missing by streaming
@@ -103,11 +105,12 @@ def ensure_corpus_file(spec: ProcessSpec, data_dir: str) -> Path:
     else:  # pragma: no cover - guarded by is_source in caller
         raise ValueError(f"Unsupported corpus source: {spec.source}")
 
-    # Optionally filter by language using FastText when a positive
-    # confidence threshold is provided.
-    if spec.confidence_threshold > 0.0:
-        keep = build_lang_filter(
+    # Optionally filter by language/script using FastText when a positive
+    # confidence threshold is provided OR when a script filter is requested.
+    if spec.confidence_threshold > 0.0 or script is not None:
+        keep = build_lang_script_filter(
             target_lang=spec.language,
+            script=script,
             threshold=spec.confidence_threshold,
             data_dir=data_dir,
         )

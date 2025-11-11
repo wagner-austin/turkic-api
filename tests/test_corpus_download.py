@@ -119,8 +119,8 @@ def test_ensure_corpus_file_applies_lang_filter(
     )
     # Stub filter to keep sentences containing 'keep'
     monkeypatch.setattr(
-        "core.corpus_download.build_lang_filter",
-        lambda target_lang, threshold, data_dir: (lambda s: "keep" in s),
+        "core.corpus_download.build_lang_script_filter",
+        lambda target_lang, script, threshold, data_dir: (lambda s: "keep" in s),
     )
     spec = ProcessSpec(
         source="oscar",
@@ -132,3 +132,39 @@ def test_ensure_corpus_file_applies_lang_filter(
     path = ensure_corpus_file(spec, str(tmp_path))
     assert path.exists()
     assert path.read_text(encoding="utf-8").splitlines() == ["keep one", "keep two"]
+
+
+def test_ensure_corpus_file_applies_script_filter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Stub stream to emit mixed sentences
+    monkeypatch.setattr(
+        "core.corpus_download.stream_oscar",
+        lambda _lang: _gen_lines(["CYRL hello", "LATN world", "LATN again"]),
+    )
+
+    # Keep only 'Latn' script sentences
+    def _builder(target_lang: str, script: str | None, threshold: float, data_dir: str):
+        assert target_lang == "kk"
+        assert script == "Latn"
+        assert threshold == 0.0
+
+        def _keep(s: str) -> bool:
+            return s.startswith("LATN ")
+
+        return _keep
+
+    monkeypatch.setattr(
+        "core.corpus_download.build_lang_script_filter",
+        _builder,
+    )
+    spec = ProcessSpec(
+        source="oscar",
+        language="kk",
+        max_sentences=10,
+        transliterate=True,
+        confidence_threshold=0.0,
+    )
+    path = ensure_corpus_file(spec, str(tmp_path), script="Latn")
+    assert path.exists()
+    assert path.read_text(encoding="utf-8").splitlines() == ["LATN world", "LATN again"]
