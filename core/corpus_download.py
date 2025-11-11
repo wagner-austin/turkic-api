@@ -11,6 +11,7 @@ from xml.etree import ElementTree as ET
 
 import requests
 
+from core.langid import build_lang_filter
 from core.models import ProcessSpec
 
 # NOTE: We deliberately avoid Any/casts/ignores. External library usage is
@@ -102,7 +103,25 @@ def ensure_corpus_file(spec: ProcessSpec, data_dir: str) -> Path:
     else:  # pragma: no cover - guarded by is_source in caller
         raise ValueError(f"Unsupported corpus source: {spec.source}")
 
-    written = _write_lines(path, stream, spec.max_sentences)
+    # Optionally filter by language using FastText when a positive
+    # confidence threshold is provided.
+    if spec.confidence_threshold > 0.0:
+        keep = build_lang_filter(
+            target_lang=spec.language,
+            threshold=spec.confidence_threshold,
+            data_dir=data_dir,
+        )
+
+        def _filtered(src: Iterable[str]) -> Iterable[str]:
+            for s in src:
+                if keep(s):
+                    yield s
+
+        source_iter: Iterable[str] = _filtered(stream)
+    else:
+        source_iter = stream
+
+    written = _write_lines(path, source_iter, spec.max_sentences)
     if written == 0:
         # Remove zero-byte files to avoid confusion
         from contextlib import suppress

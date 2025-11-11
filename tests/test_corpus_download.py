@@ -8,11 +8,7 @@ from types import ModuleType
 
 import pytest
 
-from core.corpus_download import (
-    ensure_corpus_file,
-    stream_oscar,
-    stream_wikipedia_xml,
-)
+from core.corpus_download import ensure_corpus_file, stream_oscar, stream_wikipedia_xml
 from core.models import ProcessSpec
 
 
@@ -111,3 +107,28 @@ def test_stream_oscar_uses_datasets(monkeypatch: pytest.MonkeyPatch) -> None:
         assert out == ["x", "y"]
     finally:
         del sys.modules["datasets"]
+
+
+def test_ensure_corpus_file_applies_lang_filter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Stub stream to emit mixed sentences
+    monkeypatch.setattr(
+        "core.corpus_download.stream_oscar",
+        lambda _lang: _gen_lines(["keep one", "drop x", "keep two"]),
+    )
+    # Stub filter to keep sentences containing 'keep'
+    monkeypatch.setattr(
+        "core.corpus_download.build_lang_filter",
+        lambda target_lang, threshold, data_dir: (lambda s: "keep" in s),
+    )
+    spec = ProcessSpec(
+        source="oscar",
+        language="kk",
+        max_sentences=10,
+        transliterate=True,
+        confidence_threshold=0.9,
+    )
+    path = ensure_corpus_file(spec, str(tmp_path))
+    assert path.exists()
+    assert path.read_text(encoding="utf-8").splitlines() == ["keep one", "keep two"]

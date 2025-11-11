@@ -116,6 +116,12 @@ def test_progress_updates_every_50(
     # Patch LocalCorpusService and to_ipa to avoid ICU
     monkeypatch.setattr(jobs_mod, "LocalCorpusService", _Svc)
     monkeypatch.setattr(jobs_mod, "to_ipa", lambda s, _l: s)
+    # Avoid network: ensure_corpus_file would try to download when missing
+    monkeypatch.setattr(
+        jobs_mod,
+        "ensure_corpus_file",
+        lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
+    )
 
     params = {
         "source": "oscar",
@@ -133,3 +139,37 @@ def test_progress_updates_every_50(
     # Ensure final state completed and that at least one progress update occurred mid-way
     assert h.get("status") == "completed"
     assert result["status"] == "completed"
+
+
+def test_download_failure_marks_job_failed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    redis = _RedisStub()
+    settings = Settings(
+        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+    )
+    logger = logging.getLogger(__name__)
+
+    # Force downloader to fail
+    monkeypatch.setattr(
+        jobs_mod,
+        "ensure_corpus_file",
+        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
+
+    params = {
+        "source": "oscar",
+        "language": "kk",
+        "max_sentences": 1,
+        "transliterate": True,
+        "confidence_threshold": 0.9,
+    }
+
+    with pytest.raises(RuntimeError, match="boom"):
+        jobs_mod.process_corpus_impl(
+            "d1", params, redis=redis, settings=settings, logger=logger
+        )
+    h = redis.hashes.get("job:d1")
+    assert h is not None
+    assert h.get("status") == "failed"
+    assert h.get("error") == "RuntimeError"
