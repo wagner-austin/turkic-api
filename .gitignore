@@ -58,6 +58,7 @@ local_settings.py
 # IDE files
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 
