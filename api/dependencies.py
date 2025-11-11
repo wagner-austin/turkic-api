@@ -22,7 +22,14 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 def get_redis(settings: SettingsDep) -> Generator[Redis, None, None]:
     """Dependency: Redis client using URL from settings; closes on teardown."""
-    client = Redis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
+    client = Redis.from_url(
+        settings.redis_url,
+        encoding="utf-8",
+        decode_responses=True,
+        socket_connect_timeout=1.0,
+        socket_timeout=1.0,
+        retry_on_timeout=True,
+    )
     try:
         yield client
     finally:
