@@ -9,7 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       build-essential curl git libicu-dev \
+       build-essential curl git libicu-dev pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m venv /opt/venv \
@@ -51,4 +51,3 @@ EXPOSE 8000
 
 # Default command: run the API via Uvicorn app factory
 CMD ["uvicorn", "api.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
-
