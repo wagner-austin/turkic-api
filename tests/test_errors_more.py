@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 
-from api.errors import http_exception_handler
+from api.errors import (
+    HealthStatusError,
+    health_exception_handler,
+    http_exception_handler,
+)
 
 
 def _req(path: str) -> Request:
@@ -54,3 +59,21 @@ def test_http_exception_handler_mappings() -> None:
     )
     assert r5.status_code == 500
     assert b"INTERNAL_ERROR" in r5.body
+
+
+def test_health_exception_handler_re_raises_for_unexpected() -> None:
+    req = _req("/api/v1/health")
+    with pytest.raises(RuntimeError):
+        # Pass a generic exception to ensure re-raise path is covered
+        asyncio.run(health_exception_handler(req, RuntimeError("boom")))
+
+
+def test_health_exception_handler_serializes_health() -> None:
+    req = _req("/api/v1/health")
+    resp = asyncio.run(
+        health_exception_handler(
+            req, HealthStatusError(status="degraded", redis=False, volume=True)
+        )
+    )
+    assert resp.status_code == 200
+    assert b"degraded" in resp.body
