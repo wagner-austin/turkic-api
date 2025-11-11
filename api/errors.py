@@ -6,7 +6,7 @@ from typing import Literal
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from api.models import ErrorResponse
+from api.models import ErrorResponse, HealthResponse
 
 
 def _code_for(
@@ -53,3 +53,35 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         timestamp=datetime.utcnow(),
     )
     return JSONResponse(status_code=500, content=payload.model_dump(mode="json"))
+
+
+class HealthStatusError(Exception):
+    """Domain exception used to return a stable health payload.
+
+    This allows endpoints to avoid swallowing exceptions while still responding
+    with 200 OK and a structured health body via a centralized handler.
+    """
+
+    def __init__(
+        self,
+        *,
+        status: Literal["healthy", "degraded", "unhealthy"],
+        redis: bool,
+        volume: bool,
+    ) -> None:
+        super().__init__(f"health status = {status}")
+        self.status = status
+        self.redis = redis
+        self.volume = volume
+
+
+async def health_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    if not isinstance(exc, HealthStatusError):
+        raise exc
+    payload = HealthResponse(
+        status=exc.status,
+        redis=exc.redis,
+        volume=exc.volume,
+        timestamp=datetime.utcnow(),
+    )
+    return JSONResponse(status_code=200, content=payload.model_dump(mode="json"))
