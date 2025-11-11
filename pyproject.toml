@@ -26,38 +26,22 @@ classifiers = [
 ]
 
 dependencies = [
-    # Core dependencies (alphabetized)
-    "epitran>=1.0,<1.27",           # 1.26.0 is the latest on PyPI
-    # Universal fasttext-wheel for all platforms and Python 3.10-3.13
-    "fasttext-wheel==0.9.2",
-    "numpy<2",
-    "packaging>=23.0",              # Used in tests/test_fasttext.py
-    "panphon>=0.20,<0.22",          # 0.21.2 is the newest published wheel
-    # PyICU is required, but Windows users must install the correct wheel manually. See README and turkic-pyicu-install for help.
-    # PyICU wheels: pre-built for Windows versions, fallback to PyPI elsewhere
-
+    # API service dependencies
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.9.0",
+    "redis>=5.2.0",
+    "rq>=2.0.0",
+    # Transliteration engine
     "PyICU>=2.13,<2.16; sys_platform != 'win32'",
-    "pytest>=8.0",                  # Test runner
-    "rapidfuzz>=3.5",
-    "rich>=13.7",                   # Color-aware logging and console output
-    "python-json-logger>=2.0.4",    # Structured JSON logging
-    "sentencepiece>=0.2.0",
-    "click>=8.1",
-    "types-requests>=2.31",
-    "datasets (>=3.6.0,<4.0.0)",
-    "evaluate>=0.4",             # PPL metric
-    "accelerate>=0.28",          # HF Trainer device dispatch
-    "transformers>=4.41,<5",        # mGPT / BLOOM causal LM
-    "tqdm>=4.66",                # progress bars for LM utilities
-    "scikit-learn>=1.4",        # cosine similarity utilities
-    "typing_extensions>=4.12",    # for Never on Python ≤3.11
-    "wikipedia (>=1.4.0,<2.0.0)",
-    # UI dependencies
-    "gradio>=4.0",
-    "pandas",
-    "matplotlib>=3.9",           # cosine-similarity heat-map
-    "pycountry>=23.12",          # ISO language names for pretty dropdown labels
-    "zstandard>=0.23",
+    # Dev/test tooling (installed in this service repo to enable make commands)
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "requests>=2.32.0",
 ]
 
 [project.optional-dependencies]
@@ -88,34 +72,16 @@ dev = [
     "types-requests>=2.31", # Type stubs for requests
 ]
 
-[project.scripts]
-turkic-translit = "turkic_translit.cli:main"
-turkic-pyicu-install = "turkic_translit.cli.pyicu_install:main"
-turkic-filter-russian = "turkic_translit.cli.filter_russian:main"
-turkic-download-corpus = "turkic_translit.cli.download_corpus:cli"
-turkic-build-spm = "turkic_translit.cli.build_spm:main"
-turkic-leven = "turkic_translit.cli.run_leven:main"
-turkic-web = "turkic_translit.web.web_demo:main"
-turkic-train-lm = "turkic_translit.cli.train_lm:cli"
-turkic-eval-lm  = "turkic_translit.cli.eval_lm:cli"
-turkic-train-spm = "turkic_translit.cli.train_spm:main"
+#[project.scripts]
+# (No CLI entry points in the API service package)
 
 
-[tool.setuptools.packages]
-find = { where = ["src"] }
-
-[tool.setuptools]
-include-package-data = true
-package-dir = {"" = "src"}
-
-[tool.setuptools.package-data]
-"turkic_translit" = ["rules/*.rules"]
-"turkic_translit.cli" = ["corpora.yaml"]
+# No setuptools packaging; repository is API service + core library for runtime.
 
 [tool.ruff]
 line-length = 88
 target-version = "py39"
-src = ["src", "tests", "examples"]
+src = ["api", "core", "tests"]
 
 [tool.ruff.lint]
 select = [
@@ -136,9 +102,29 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["turkic_translit"]
+known-first-party = ["api", "core"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # unused imports
 "tests/*" = ["E731"]      # do not assign a lambda expression
 "examples/*" = ["E402"]   # module level import not at top of file
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
+pydantic = "^2.9.0"
+redis = "^5.2.0"
+rq = "^2.0.0"
+PyICU = {version = ">=2.13,<2.16", markers = "sys_platform != 'win32'"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-cov = "^6.0.0"
+pytest-asyncio = "^0.24.0"
+ruff = "^0.8.0"
+mypy = "^1.13.0"
+httpx = "^0.27.0"
