@@ -1,7 +1,7 @@
 import pathlib
 import unicodedata
 
-from turkic_translit.core import to_latin
+from core.translit import to_latin
 
 ROOT = pathlib.Path(__file__).parent
 
