@@ -6,7 +6,7 @@ Reference set synchronised with McCollum & Chen 2020 (JIPA 51 (2): 276-298),
 
 import pytest
 
-from turkic_translit.core import to_ipa
+from core.translit import to_ipa
 
 GOLD = {
     "б": "b",
