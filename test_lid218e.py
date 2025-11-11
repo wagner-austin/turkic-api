@@ -180,9 +180,9 @@ def test_lid218e():
         print(f"  ({known_limitations} passed with known model limitations)")
     print("=" * 80)
 
-    assert failed == 0, (
-        f"{failed} test(s) failed. The model may need adjustment or test expectations may be wrong."
-    )
+    assert (
+        failed == 0
+    ), f"{failed} test(s) failed. The model may need adjustment or test expectations may be wrong."
 
     if known_limitations > 0:
         print(
