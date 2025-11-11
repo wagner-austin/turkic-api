@@ -12,7 +12,7 @@ Source: https://www.cambridge.org/core/services/aop-cambridge-core/content/view/
 
 from unicodedata import category, normalize
 
-from turkic_translit.core import to_ipa
+from core.translit import to_ipa
 
 
 def strip(s: str) -> str:
