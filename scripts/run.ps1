@@ -11,38 +11,31 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 
 function Show-Help {
     Write-Host "Available commands:"
-    Write-Host "  ./scripts/run.ps1 lint       - Run linting checks"
-    Write-Host "  ./scripts/run.ps1 format     - Auto-format code" 
-    Write-Host "  ./scripts/run.ps1 test       - Run tests"
-    Write-Host "  ./scripts/run.ps1 clean      - Remove build artifacts"
-    Write-Host "  ./scripts/run.ps1 build      - Build distribution package"
-    Write-Host "  ./scripts/run.ps1 web        - Run the web UI example"
-    Write-Host "  ./scripts/run.ps1 demo       - Run the simple demo"
-    Write-Host "  ./scripts/run.ps1 full-demo  - Run the comprehensive demo"
+    Write-Host "  ./scripts/run.ps1 lint   - Run linting checks (ruff, mypy, guards)"
+    Write-Host "  ./scripts/run.ps1 test   - Run tests with coverage"
+    Write-Host "  ./scripts/run.ps1 check  - Run lint then tests"
+    Write-Host "  ./scripts/run.ps1 clean  - Remove build artifacts and caches"
 }
 
 function Invoke-Lint {
     Write-Host "Running ruff linter..."
-    ruff check $ProjectRoot\src $ProjectRoot\tests $ProjectRoot\examples
-    
-    Write-Host "Checking formatting with black..."
-    black --check $ProjectRoot\src $ProjectRoot\tests $ProjectRoot\examples
-    
-    Write-Host "Running type checking with mypy..."
-    mypy --strict $ProjectRoot
-}
-
-function Invoke-Format {
-    Write-Host "Formatting code with black..."
-    black $ProjectRoot\src $ProjectRoot\tests $ProjectRoot\examples
-    
-    Write-Host "Auto-fixing issues with ruff..."
-    ruff check --fix $ProjectRoot\src $ProjectRoot\tests $ProjectRoot\examples
+    ruff check $ProjectRoot
+    Write-Host "Auto-fixing format with ruff..."
+    ruff format $ProjectRoot
+    Write-Host "Running type checking with mypy (strict)..."
+    mypy --strict $ProjectRoot\api $ProjectRoot\core
+    Write-Host "Running repository guards..."
+    python -m tools.guard
 }
 
 function Invoke-Test {
-    Write-Host "Running tests..."
-    python -m pytest
+    Write-Host "Running tests with coverage..."
+    python -I -m pytest -vv -p pytest_cov --cov=api --cov=core --cov-branch --cov-report=term-missing
+}
+
+function Invoke-Check {
+    Invoke-Lint
+    Invoke-Test
 }
 
 function Invoke-Clean {
@@ -60,36 +53,13 @@ function Invoke-Clean {
     Get-ChildItem -Path $ProjectRoot -Filter "*.pyc" -Recurse -File | Remove-Item -Force
 }
 
-function Invoke-Build {
-    Invoke-Clean
-    Write-Host "Building distribution package..."
-    python -m build
-}
-
-function Invoke-Web {
-    Write-Host "Starting web UI..."
-    python $ProjectRoot\turkic_tools.py web
-}
-
-function Invoke-Demo {
-    Write-Host "Running simple demo..."
-    python $ProjectRoot\turkic_tools.py demo
-}
-
-function Invoke-FullDemo {
-    Write-Host "Running comprehensive demo..."
-    python $ProjectRoot\turkic_tools.py full-demo
-}
+function Invoke-Build { Write-Host "No build target for API service." }
 
 # Execute the requested command
 switch ($Command) {
     "lint" { Invoke-Lint }
-    "format" { Invoke-Format }
     "test" { Invoke-Test }
+    "check" { Invoke-Check }
     "clean" { Invoke-Clean }
-    "build" { Invoke-Build }
-    "web" { Invoke-Web }
-    "demo" { Invoke-Demo }
-    "full-demo" { Invoke-FullDemo }
     default { Show-Help }
 }
