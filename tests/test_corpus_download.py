@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from types import ModuleType
 
@@ -144,7 +144,9 @@ def test_ensure_corpus_file_applies_script_filter(
     )
 
     # Keep only 'Latn' script sentences
-    def _builder(target_lang: str, script: str | None, threshold: float, data_dir: str):
+    def _builder(
+        target_lang: str, script: str | None, threshold: float, data_dir: str
+    ) -> Callable[[str], bool]:
         assert target_lang == "kk"
         assert script == "Latn"
         assert threshold == 0.0
