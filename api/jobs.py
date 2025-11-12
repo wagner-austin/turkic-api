@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
 import logging
+from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
+from typing import Final
 
+import httpx
 from redis import Redis
 
 from api.config import Settings
@@ -134,6 +138,52 @@ def process_corpus_impl(
         },
     )
     logger.info("Job completed", extra={"job_id": job_id})
+
+    # Optional: upload result to data-bank-api and record file_id (non-blocking)
+    url_cfg: Final[str] = settings.data_bank_api_url
+    key_cfg: Final[str] = settings.data_bank_api_key
+    if url_cfg.strip() != "" and key_cfg.strip() != "":
+
+        class _UploadError(Exception):
+            pass
+
+        def _try_upload() -> None:
+            headers = {"X-API-Key": key_cfg, "X-Request-ID": job_id}
+            upload_url = f"{url_cfg.rstrip('/')}/files"
+            with out_path.open("rb") as f:
+                files = {"file": (f"{job_id}.txt", f, "text/plain; charset=utf-8")}
+                resp = httpx.post(
+                    upload_url, headers=headers, files=files, timeout=600.0
+                )
+            if 200 <= resp.status_code < 300:
+                fid: str | None = None
+                with suppress(json.JSONDecodeError):
+                    obj = json.loads(resp.text)
+                    if isinstance(obj, dict):
+                        v = obj.get("file_id")
+                        if isinstance(v, str) and v.strip() != "":
+                            fid = v
+                if fid is not None:
+                    redis.hset(f"job:{job_id}", {"file_id": fid})
+                    logger.info(
+                        "data-bank upload succeeded",
+                        extra={"job_id": job_id, "file_id": fid},
+                    )
+                else:
+                    logger.error(
+                        "data-bank upload missing file_id",
+                        extra={"job_id": job_id, "status": resp.status_code},
+                    )
+                    raise _UploadError("missing file_id in response")
+            else:
+                logger.error(
+                    "data-bank upload failed",
+                    extra={"job_id": job_id, "status": resp.status_code},
+                )
+                raise _UploadError(f"upload failed: {resp.status_code}")
+
+        with suppress(_UploadError, httpx.HTTPError, OSError):
+            _try_upload()
     return {"job_id": job_id, "status": "completed", "result": str(out_path)}
 
 
