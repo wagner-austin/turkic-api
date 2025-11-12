@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -109,7 +110,7 @@ def test_progress_updates_every_50(
 
     class _Svc:
         def __init__(self, _data_dir: str) -> None: ...
-        def stream(self, _spec: object):
+        def stream(self, _spec: object) -> Iterator[str]:
             for i in range(100):
                 yield f"line {i}"
 
@@ -234,7 +235,7 @@ def test_valid_script_normalizes_and_passes(
 
     class _Svc:
         def __init__(self, _data_dir: str) -> None: ...
-        def stream(self, _spec: object):
+        def stream(self, _spec: object) -> Iterator[str]:
             yield "line"
 
     monkeypatch.setattr(jobs_mod, "LocalCorpusService", _Svc)
@@ -272,7 +273,7 @@ def test_blank_script_string_is_treated_as_none(
 
     class _Svc:
         def __init__(self, _data_dir: str) -> None: ...
-        def stream(self, _spec: object):
+        def stream(self, _spec: object) -> Iterator[str]:
             yield "line"
 
     monkeypatch.setattr(jobs_mod, "LocalCorpusService", _Svc)
