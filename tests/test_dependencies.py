@@ -49,7 +49,10 @@ def test_get_queue_returns_queue(monkeypatch: pytest.MonkeyPatch) -> None:
         def __init__(self, *, connection: object) -> None:
             self.connection = connection
 
-    dummy = ModuleType("rq")
+    class _RQModule(ModuleType):
+        Queue: type[_Q]
+
+    dummy = _RQModule("rq")
     dummy.Queue = _Q
     sys.modules["rq"] = dummy
 
