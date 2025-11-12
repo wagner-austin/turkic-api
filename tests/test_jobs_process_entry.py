@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -37,24 +38,12 @@ def test_process_corpus_entry(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     # Stub corpus and transliteration
     class _Svc:
         def __init__(self, _root: str) -> None: ...
-        def stream(self, _spec: object):
+        def stream(self, _spec: object) -> Iterator[str]:
             yield "hello"
 
     monkeypatch.setattr(jobs_mod, "LocalCorpusService", _Svc)
     monkeypatch.setattr(jobs_mod, "to_ipa", lambda s, _l: s)
-    # Avoid network in test: pretend corpus file exists
-    monkeypatch.setattr(
-        jobs_mod,
-        "ensure_corpus_file",
-        lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
-    )
-    # Avoid network in test: pretend corpus file exists
-    monkeypatch.setattr(
-        jobs_mod,
-        "ensure_corpus_file",
-        lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
-    )
-    # Avoid network in test: pretend corpus file exists
+    # Avoid network in test: pretend corpus file exists (single patch)
     monkeypatch.setattr(
         jobs_mod,
         "ensure_corpus_file",
