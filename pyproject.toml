@@ -105,6 +105,10 @@ ignore = [
     "E501"  # line too long (handled by formatter)
 ]
 
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"typing.Any" = { msg = "Do not use typing.Any; prefer precise types (e.g., object or Protocol)." }
+"typing.cast" = { msg = "Do not use typing.cast; prefer adapters or precise types." }
+
 [tool.ruff.lint.isort]
 known-first-party = ["api", "core"]
 
