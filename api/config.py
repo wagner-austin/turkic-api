@@ -11,6 +11,9 @@ class Settings:
     redis_url: str
     data_dir: str
     environment: str
+    # data-bank-api integration (producer role)
+    data_bank_api_url: str = ""
+    data_bank_api_key: str = ""
 
     @staticmethod
     def from_env() -> Settings:
@@ -18,4 +21,12 @@ class Settings:
         redis_url = os.getenv(f"{prefix}REDIS_URL", "redis://localhost:6379/0").strip()
         data_dir = os.getenv(f"{prefix}DATA_DIR", "/data").strip() or "/data"
         environment = os.getenv(f"{prefix}ENV", "local").strip() or "local"
-        return Settings(redis_url=redis_url, data_dir=data_dir, environment=environment)
+        data_bank_api_url = os.getenv(f"{prefix}DATA_BANK_API_URL", "").strip()
+        data_bank_api_key = os.getenv(f"{prefix}DATA_BANK_API_KEY", "").strip()
+        return Settings(
+            redis_url=redis_url,
+            data_dir=data_dir,
+            environment=environment,
+            data_bank_api_url=data_bank_api_url,
+            data_bank_api_key=data_bank_api_key,
+        )
