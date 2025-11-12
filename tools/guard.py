@@ -22,7 +22,7 @@ def run_guards(roots: list[str]) -> int:
 
 def main() -> int:
     # Scan only API, core, tests, and tools; legacy src is removed in cleanup.
-    return run_guards(["api", "core", "tests", "tools"])
+    return run_guards(["api", "core", "tests", "tools", "scripts"])
 
 
 if __name__ == "__main__":
