@@ -41,8 +41,9 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClie
     r = _RedisStub()
     app.dependency_overrides[get_redis] = lambda: r
     app.dependency_overrides[get_queue] = lambda: _QueueStub()
-    # Expose stub on app state for tests that need to seed data
-    app.state.redis_stub = r
+    # Expose stub via module-level variable for tests that need to seed data
+    global _redis_stub_for_tests
+    _redis_stub_for_tests = r
     with TestClient(app) as c:
         yield c
 
@@ -70,8 +71,9 @@ def test_job_status_not_found(client: TestClient) -> None:
 
 def test_job_status_found(client: TestClient, tmp_path: Path) -> None:
     # Access the overridden redis to seed data
-    r: _RedisStub = client.app.state.redis_stub
-    _seed_job(r, "abc", "processing", tmp_path)
+    assert _redis_stub_for_tests is not None
+    rstub: _RedisStub = _redis_stub_for_tests
+    _seed_job(rstub, "abc", "processing", tmp_path)
     resp = client.get("/api/v1/jobs/abc")
     assert resp.status_code == 200
     data = resp.json()
@@ -81,24 +83,27 @@ def test_job_status_found(client: TestClient, tmp_path: Path) -> None:
 
 
 def test_job_result_not_ready(client: TestClient, tmp_path: Path) -> None:
-    r: _RedisStub = client.app.state.redis_stub
-    _seed_job(r, "j1", "queued", tmp_path)
-    r = client.get("/api/v1/jobs/j1/result")
-    assert r.status_code == 425
+    assert _redis_stub_for_tests is not None
+    rstub: _RedisStub = _redis_stub_for_tests
+    _seed_job(rstub, "j1", "queued", tmp_path)
+    resp = client.get("/api/v1/jobs/j1/result")
+    assert resp.status_code == 425
 
 
 def test_job_result_completed(client: TestClient, tmp_path: Path) -> None:
-    r: _RedisStub = client.app.state.redis_stub
-    _seed_job(r, "j2", "completed", tmp_path)
-    r = client.get("/api/v1/jobs/j2/result")
-    assert r.status_code == 200
-    assert r.headers["content-type"].startswith("text/plain")
-    assert "attachment;" in r.headers.get("content-disposition", "")
-    assert "hello" in r.text
+    assert _redis_stub_for_tests is not None
+    rstub: _RedisStub = _redis_stub_for_tests
+    _seed_job(rstub, "j2", "completed", tmp_path)
+    resp = client.get("/api/v1/jobs/j2/result")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/plain")
+    assert "attachment;" in resp.headers.get("content-disposition", "")
+    assert "hello" in resp.text
 
 
 def test_job_result_missing_file_is_expired(client: TestClient, tmp_path: Path) -> None:
-    redis_stub: _RedisStub = client.app.state.redis_stub
+    assert _redis_stub_for_tests is not None
+    redis_stub: _RedisStub = _redis_stub_for_tests
     # Seed completed status but do not create file
     redis_stub.hset(
         "job:j3",
@@ -108,5 +113,8 @@ def test_job_result_missing_file_is_expired(client: TestClient, tmp_path: Path) 
             "updated_at": "2024-01-01T00:00:00",
         },
     )
-    r = client.get("/api/v1/jobs/j3/result")
-    assert r.status_code == 410
+    resp = client.get("/api/v1/jobs/j3/result")
+    assert resp.status_code == 410
+
+
+_redis_stub_for_tests: _RedisStub | None = None
