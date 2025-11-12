@@ -27,6 +27,7 @@ class JobStatus(BaseModel):
     progress: int
     message: str | None = None
     result_url: str | None = None
+    file_id: str | None = None
     created_at: datetime
     updated_at: datetime
     error: str | None = None
