@@ -79,6 +79,7 @@ class JobService:
         )
 
         result_url: str | None = None
+        file_id: str | None = data.get("file_id") if "file_id" in data else None
         if status == "completed" and self._result_path(job_id).exists():
             result_url = f"/api/v1/jobs/{job_id}/result"
 
@@ -88,6 +89,7 @@ class JobService:
             progress=progress,
             message=message,
             result_url=result_url,
+            file_id=file_id,
             created_at=created_at,
             updated_at=updated_at,
             error=error,
