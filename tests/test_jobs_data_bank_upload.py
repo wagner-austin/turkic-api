@@ -14,10 +14,21 @@ class _RedisStub:
     def __init__(self) -> None:
         self.hashes: dict[str, dict[str, str]] = {}
 
-    def hset(self, key: str, mapping: dict[str, str]) -> int:
-        cur = self.hashes.get(key, {})
-        cur.update(mapping)
-        self.hashes[key] = cur
+    def hset(
+        self,
+        name: str,
+        key: str | None = None,
+        value: str | None = None,
+        mapping: dict[str, str] | None = None,
+    ) -> int:
+        cur = self.hashes.get(name, {})
+        if mapping is not None:
+            cur.update(mapping)
+        elif key is not None and value is not None:
+            cur[key] = value
+        else:
+            raise TypeError("hset expected mapping or key/value")
+        self.hashes[name] = cur
         return 1
 
 
