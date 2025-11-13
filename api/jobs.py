@@ -189,10 +189,7 @@ def process_corpus_impl(
         try:
             _try_upload()
         except Exception as exc:
-            logger.error(
-                "data-bank upload exception",
-                extra={"job_id": job_id, "error_type": type(exc).__name__, "error": str(exc)},
-            )
+            logger.error(f"data-bank upload exception: {type(exc).__name__}: {exc}")
     return {"job_id": job_id, "status": "completed", "result": str(out_path)}
 
 
