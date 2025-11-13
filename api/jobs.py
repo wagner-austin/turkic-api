@@ -171,7 +171,7 @@ def process_corpus_impl(
                             if isinstance(v, str) and v.strip() != "":
                                 fid = v
                     if fid is not None:
-                        redis.hset(f"job:{job_id}", {"file_id": fid})
+                        redis.hset(f"job:{job_id}", "file_id", fid)
                         logger.info(
                             "data-bank upload succeeded",
                             extra={"job_id": job_id, "file_id": fid},
