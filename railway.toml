@@ -6,7 +6,7 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 # Use absolute paths to the venv binaries to avoid PATH issues on the
-# target platform. This ensures both the RQ worker and Uvicorn are found.
-startCommand = "sh -lc \"/opt/venv/bin/rq worker default --url $TURKIC_REDIS_URL --with-scheduler & exec /opt/venv/bin/uvicorn api.main:create_app --factory --host 0.0.0.0 --port $PORT\""
+# target platform. This ensures both the RQ worker and Hypercorn are found.
+startCommand = "sh -lc \"/opt/venv/bin/rq worker default --url $TURKIC_REDIS_URL --with-scheduler & exec /opt/venv/bin/hypercorn --bind [::]:$PORT 'api.main:create_app()'\""
 healthcheckPath = "/api/v1/health"
 restartPolicyType = "on_failure"
