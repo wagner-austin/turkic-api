@@ -142,6 +142,7 @@ def process_corpus_impl(
     # Optional: upload result to data-bank-api and record file_id (non-blocking)
     url_cfg: Final[str] = settings.data_bank_api_url
     key_cfg: Final[str] = settings.data_bank_api_key
+    logger.info(f"UPLOAD CHECK: url={url_cfg!r} key_len={len(key_cfg)}")
     if url_cfg.strip() != "" and key_cfg.strip() != "":
 
         class _UploadError(Exception):
