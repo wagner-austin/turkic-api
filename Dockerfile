@@ -21,7 +21,7 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock ./
 RUN poetry export --only main --without-hashes -f requirements.txt -o requirements.txt \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt \
-    && /opt/venv/bin/python -c "import uvicorn, rq; print('deps ok')"
+    && /opt/venv/bin/python -c "import hypercorn, rq; print('deps ok')"
 
 # ---------- Runtime: minimal image with ICU runtime + venv ----------
 FROM python:3.11-slim-bookworm AS runtime
@@ -46,5 +46,5 @@ COPY core core
 
 EXPOSE 8000
 
-# Default command: run the API via Uvicorn app factory
-CMD ["uvicorn", "api.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+# Default command: run the API via Hypercorn app factory
+CMD ["hypercorn", "api.main:create_app()", "--bind", "[::]:8000"]
