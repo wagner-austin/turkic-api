@@ -1,4 +1,4 @@
-﻿# Turkic API - Architecture & Design Document
+# Turkic API - Architecture & Design Document
 
 ## Project Vision
 
@@ -9,30 +9,30 @@ Production-grade API for Turkic language corpus processing with **zero technical
 ## Quality Standards (Non-Negotiable)
 
 ### Type Safety
-- âœ… `mypy --strict` mode enabled
-- âœ… **Zero `Any` types** (explicit or implicit)
-- âœ… **Zero type casts**
-- âœ… **Zero `type: ignore` comments**
-- âœ… Full type coverage for all functions, methods, and variables
+- ✅ `mypy --strict` mode enabled
+- ✅ **Zero `Any` types** (explicit or implicit)
+- ✅ **Zero type casts**
+- ✅ **Zero `type: ignore` comments**
+- ✅ Full type coverage for all functions, methods, and variables
 
 ### Test Coverage
-- âœ… **100% statement coverage**
-- âœ… **100% branch coverage**
-- âœ… Unit tests for all functions
-- âœ… Integration tests for all endpoints
-- âœ… `pytest-cov` with `--cov-report=term-missing --cov-branch`
+- ✅ **100% statement coverage**
+- ✅ **100% branch coverage**
+- ✅ Unit tests for all functions
+- ✅ Integration tests for all endpoints
+- ✅ `pytest-cov` with `--cov-report=term-missing --cov-branch`
 
 ### Code Quality
-- âœ… **DRY** (Don't Repeat Yourself) - no code duplication
-- âœ… **Modular** - single responsibility principle
-- âœ… **Consistent** - unified patterns across codebase
-- âœ… **Standardized** - follow Python conventions (PEP 8, PEP 484)
+- ✅ **DRY** (Don't Repeat Yourself) - no code duplication
+- ✅ **Modular** - single responsibility principle
+- ✅ **Consistent** - unified patterns across codebase
+- ✅ **Standardized** - follow Python conventions (PEP 8, PEP 484)
 
 ### Process
-- âœ… `make check` must pass before commit
-- âœ… All linters must pass (ruff, mypy)
-- âœ… All tests must pass
-- âœ… No warnings allowed
+- ✅ `make check` must pass before commit
+- ✅ All linters must pass (ruff, mypy)
+- ✅ All tests must pass
+- ✅ No warnings allowed
 
 ---
 
@@ -41,7 +41,7 @@ Production-grade API for Turkic language corpus processing with **zero technical
 ### Backend (Python 3.11+)
 ```yaml
 Framework: FastAPI (async/await)
-ASGI Server: Uvicorn
+ASGI Server: Hypercorn
 Dependency Management: Poetry
 Job Queue: Redis + RQ
 Type Checking: mypy (strict mode)
@@ -85,46 +85,46 @@ Deployment: GitHub Actions (YAML workflow)
 - Quality: mypy --strict, ruff, and guard checks green; tests cover success and failure branches; 100% statements and branches.
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚              Railway Platform               â”‚
-â”‚                                             â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-â”‚  â”‚  API Service (FastAPI + Uvicorn)     â”‚  â”‚
-â”‚  â”‚  Port: $PORT                         â”‚  â”‚
-â”‚  â”‚                                      â”‚  â”‚
-â”‚  â”‚  Endpoints:                          â”‚  â”‚
-â”‚  â”‚  â€¢ POST /api/v1/jobs                 â”‚  â”‚
-â”‚  â”‚  â€¢ GET  /api/v1/jobs/{job_id}        â”‚  â”‚
-â”‚  â”‚  â€¢ GET  /api/v1/jobs/{job_id}/result â”‚  â”‚
-â”‚  â”‚  â€¢ GET  /api/v1/health                â”‚  â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-â”‚               â”‚                             â”‚
-â”‚               â–¼                             â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-â”‚  â”‚  Redis (Railway Addon)               â”‚  â”‚
-â”‚  â”‚  â€¢ Job queue (RQ)                    â”‚  â”‚
-â”‚  â”‚  â€¢ Job status cache                  â”‚  â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-â”‚               â”‚                             â”‚
-â”‚               â–¼                             â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-â”‚  â”‚  RQ Worker (Background Service)      â”‚  â”‚
-â”‚  â”‚                                      â”‚  â”‚
-â”‚  â”‚  Job: process_corpus()               â”‚  â”‚
-â”‚  â”‚  1. Download corpus                  â”‚  â”‚
-â”‚  â”‚  2. Filter by language               â”‚  â”‚
-â”‚  â”‚  3. Transliterate to IPA             â”‚  â”‚
-â”‚  â”‚  4. Save result                      â”‚  â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-â”‚               â”‚                             â”‚
-â”‚               â–¼                             â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-â”‚  â”‚  Persistent Volume                   â”‚  â”‚
-â”‚  â”‚  /data/                              â”‚  â”‚
-â”‚  â”‚  â”œâ”€â”€ models/lid.176.bin (126 MB)     â”‚  â”‚
-â”‚  â”‚  â””â”€â”€ results/{job_id}.txt            â”‚  â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────────────────────────────────────────┐
+│              Railway Platform               │
+│                                             │
+│  ┌──────────────────────────────────────┐  │
+│  │  API Service (FastAPI + Uvicorn)     │  │
+│  │  Port: $PORT                         │  │
+│  │                                      │  │
+│  │  Endpoints:                          │  │
+│  │  • POST /api/v1/jobs                 │  │
+│  │  • GET  /api/v1/jobs/{job_id}        │  │
+│  │  • GET  /api/v1/jobs/{job_id}/result │  │
+│  │  • GET  /api/v1/health                │  │
+│  └────────────┬─────────────────────────┘  │
+│               │                             │
+│               ▼                             │
+│  ┌──────────────────────────────────────┐  │
+│  │  Redis (Railway Addon)               │  │
+│  │  • Job queue (RQ)                    │  │
+│  │  • Job status cache                  │  │
+│  └────────────┬─────────────────────────┘  │
+│               │                             │
+│               ▼                             │
+│  ┌──────────────────────────────────────┐  │
+│  │  RQ Worker (Background Service)      │  │
+│  │                                      │  │
+│  │  Job: process_corpus()               │  │
+│  │  1. Download corpus                  │  │
+│  │  2. Filter by language               │  │
+│  │  3. Transliterate to IPA             │  │
+│  │  4. Save result                      │  │
+│  └────────────┬─────────────────────────┘  │
+│               │                             │
+│               ▼                             │
+│  ┌──────────────────────────────────────┐  │
+│  │  Persistent Volume                   │  │
+│  │  /data/                              │  │
+│  │  ├── models/lid.176.bin (126 MB)     │  │
+│  │  └── results/{job_id}.txt            │  │
+│  └──────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
 ```
 
 ---
@@ -133,49 +133,49 @@ Deployment: GitHub Actions (YAML workflow)
 
 ```
 turkic-api/
-â”œâ”€â”€ pyproject.toml              # Poetry dependencies + tool configs
-â”œâ”€â”€ poetry.lock                 # Locked dependencies
-â”œâ”€â”€ Makefile                    # Development commands
-â”œâ”€â”€ Dockerfile                  # Multi-stage build
-â”œâ”€â”€ .dockerignore               # Docker build exclusions
-â”œâ”€â”€ docker-compose.yml          # Local dev stack
-â”œâ”€â”€ railway.toml                # Railway deployment
-â”œâ”€â”€ .env.example                # Environment template
-â”œâ”€â”€ .gitignore
-â”œâ”€â”€ README.md
-â”œâ”€â”€ DESIGN.md                   # This file
-â”‚
-â”œâ”€â”€ api/                        # FastAPI application
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ main.py                # App factory, routes
-â”‚   â”œâ”€â”€ config.py              # Pydantic settings (type-safe config)
-â”‚   â”œâ”€â”€ models.py              # Request/response schemas
-â”‚   â”œâ”€â”€ jobs.py                # RQ job definitions
-â”‚   â”œâ”€â”€ worker.py              # RQ worker entry
-â”‚   â”œâ”€â”€ dependencies.py        # FastAPI DI (Redis, Config, Logger)
-â”‚   â”œâ”€â”€ logging.py             # Structured logging setup
-â”‚   â””â”€â”€ services.py            # Business logic services (injected)
-â”‚
-â”œâ”€â”€ core/                       # Business logic (from original repo)
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ translit.py            # PyICU transliteration
-â”‚   â”œâ”€â”€ langid.py              # FastText language ID
-â”‚   â”œâ”€â”€ corpus.py              # OSCAR/Wikipedia streaming
-â”‚   â”œâ”€â”€ models.py              # Core domain models
-â”‚   â””â”€â”€ rules/                 # ICU rules (*.rules)
-â”‚
-â”œâ”€â”€ tests/                      # 100% coverage required
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ conftest.py            # Pytest fixtures
-â”‚   â”œâ”€â”€ test_api.py            # API endpoint tests
-â”‚   â”œâ”€â”€ test_jobs.py           # Job processing tests
-â”‚   â”œâ”€â”€ test_translit.py       # Transliteration tests
-â”‚   â”œâ”€â”€ test_langid.py         # Language ID tests
-â”‚   â”œâ”€â”€ test_corpus.py         # Corpus streaming tests
-â”‚   â””â”€â”€ test_dependencies.py   # DI container tests
-â”‚
-â””â”€â”€ scripts/                    # Utilities
-    â””â”€â”€ download_models.py     # Download FastText model
+├── pyproject.toml              # Poetry dependencies + tool configs
+├── poetry.lock                 # Locked dependencies
+├── Makefile                    # Development commands
+├── Dockerfile                  # Multi-stage build
+├── .dockerignore               # Docker build exclusions
+├── docker-compose.yml          # Local dev stack
+├── railway.toml                # Railway deployment
+├── .env.example                # Environment template
+├── .gitignore
+├── README.md
+├── DESIGN.md                   # This file
+│
+├── api/                        # FastAPI application
+│   ├── __init__.py
+│   ├── main.py                # App factory, routes
+│   ├── config.py              # Pydantic settings (type-safe config)
+│   ├── models.py              # Request/response schemas
+│   ├── jobs.py                # RQ job definitions
+│   ├── worker.py              # RQ worker entry
+│   ├── dependencies.py        # FastAPI DI (Redis, Config, Logger)
+│   ├── logging.py             # Structured logging setup
+│   └── services.py            # Business logic services (injected)
+│
+├── core/                       # Business logic (from original repo)
+│   ├── __init__.py
+│   ├── translit.py            # PyICU transliteration
+│   ├── langid.py              # FastText language ID
+│   ├── corpus.py              # OSCAR/Wikipedia streaming
+│   ├── models.py              # Core domain models
+│   └── rules/                 # ICU rules (*.rules)
+│
+├── tests/                      # 100% coverage required
+│   ├── __init__.py
+│   ├── conftest.py            # Pytest fixtures
+│   ├── test_api.py            # API endpoint tests
+│   ├── test_jobs.py           # Job processing tests
+│   ├── test_translit.py       # Transliteration tests
+│   ├── test_langid.py         # Language ID tests
+│   ├── test_corpus.py         # Corpus streaming tests
+│   └── test_dependencies.py   # DI container tests
+│
+└── scripts/                    # Utilities
+    └── download_models.py     # Download FastText model
 ```
 
 ---
@@ -290,11 +290,11 @@ class JobService:
 
 ### Benefits of This Pattern
 
-âœ… **Testability**: Easy to mock dependencies in tests
-âœ… **Type Safety**: All injections are type-checked by mypy
-âœ… **No Globals**: No hidden state, explicit everywhere
-âœ… **Lifecycle Management**: FastAPI handles cleanup automatically
-âœ… **Request Isolation**: Each request gets fresh dependencies
+✅ **Testability**: Easy to mock dependencies in tests
+✅ **Type Safety**: All injections are type-checked by mypy
+✅ **No Globals**: No hidden state, explicit everywhere
+✅ **Lifecycle Management**: FastAPI handles cleanup automatically
+✅ **Request Isolation**: Each request gets fresh dependencies
 
 ---
 
@@ -418,11 +418,11 @@ def process_corpus(job_id: str, params: dict[str, object]) -> dict[str, object]:
 
 ### Benefits of This Pattern
 
-âœ… **Explicit**: Logger is always passed, never hidden
-âœ… **Structured**: All logs are JSON for easy parsing
-âœ… **Typed**: Logger interface is type-checked
-âœ… **Contextual**: Extra fields provide rich context
-âœ… **Testable**: Can inject mock loggers in tests
+✅ **Explicit**: Logger is always passed, never hidden
+✅ **Structured**: All logs are JSON for easy parsing
+✅ **Typed**: Logger interface is type-checked
+✅ **Contextual**: Extra fields provide rich context
+✅ **Testable**: Can inject mock loggers in tests
 
 ---
 
@@ -624,8 +624,8 @@ def redis_mock() -> MockRedis:
 ```python
 def test_transliterate_kazakh_to_ipa() -> None:
     """Test Kazakh Cyrillic -> IPA transliteration."""
-    result = transliterate_to_ipa("ÒšÐ°Ð·Ð°Ò›ÑÑ‚Ð°Ð½", lang="kk")
-    assert result == "qÉ‘zÉ‘qstÉ‘n"
+    result = transliterate_to_ipa("Қазақстан", lang="kk")
+    assert result == "qɑzɑqstɑn"
     assert isinstance(result, str)
 ```
 
@@ -724,7 +724,7 @@ python = "^3.11"
 
 # Web framework
 fastapi = "^0.115.0"
-uvicorn = {extras = ["standard"], version = "^0.32.0"}
+hypercorn = "^0.18.0"
 pydantic = "^2.9.0"
 pydantic-settings = "^2.6.0"
 
@@ -830,7 +830,7 @@ async def job_not_found_handler(
 builder = "dockerfile"
 
 [deploy]
-startCommand = "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+startCommand = "hypercorn 'api.main:create_app()' --bind [::]:$PORT"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
@@ -872,7 +872,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY api/ api/
 COPY core/ core/
 EXPOSE 8000
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["hypercorn", "api.main:create_app()", "--bind", "[::]:8000"]
 ```
 
 ---
@@ -963,18 +963,18 @@ async def health_check(redis: Redis = Depends(get_redis)) -> HealthResponse:
 ## Migration from Original Repo
 
 ### What We Keep
-- âœ… `core/rules/*.rules` - ICU transliteration rules
-- âœ… Core transliteration logic (refactored with strict types)
-- âœ… FastText language ID (refactored)
-- âœ… Corpus streaming utilities (refactored)
+- ✅ `core/rules/*.rules` - ICU transliteration rules
+- ✅ Core transliteration logic (refactored with strict types)
+- ✅ FastText language ID (refactored)
+- ✅ Corpus streaming utilities (refactored)
 
 ### What We Remove
-- âŒ Gradio UI
-- âŒ CLI tools
-- âŒ HuggingFace Spaces config
-- âŒ SentencePiece training
-- âŒ Language model training/eval
-- âŒ PyPI packaging
+- ❌ Gradio UI
+- ❌ CLI tools
+- ❌ HuggingFace Spaces config
+- ❌ SentencePiece training
+- ❌ Language model training/eval
+- ❌ PyPI packaging
 
 ### Refactoring Strategy
 1. Copy minimal code from original repo
@@ -1026,4 +1026,3 @@ Before considering this project "done":
 ## License
 
 MIT / Apache-2.0 (inherited from original repo)
-
