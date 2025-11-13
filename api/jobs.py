@@ -186,8 +186,13 @@ def process_corpus_impl(
                 )
                 raise _UploadError(f"upload failed: {resp.status_code}")
 
-        with suppress(_UploadError, httpx.HTTPError, OSError):
+        try:
             _try_upload()
+        except Exception as exc:
+            logger.error(
+                "data-bank upload exception",
+                extra={"job_id": job_id, "error_type": type(exc).__name__, "error": str(exc)},
+            )
     return {"job_id": job_id, "status": "completed", "result": str(out_path)}
 
 
