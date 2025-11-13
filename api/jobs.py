@@ -151,11 +151,14 @@ def process_corpus_impl(
         def _try_upload() -> None:
             headers = {"X-API-Key": key_cfg, "X-Request-ID": job_id}
             upload_url = f"{url_cfg.rstrip('/')}/files"
+            logger.info(f"Starting upload to {upload_url}")
             with out_path.open("rb") as f:
                 files = {"file": (f"{job_id}.txt", f, "text/plain; charset=utf-8")}
+                logger.info(f"Sending POST request, file size: {out_path.stat().st_size}")
                 resp = httpx.post(
                     upload_url, headers=headers, files=files, timeout=600.0
                 )
+            logger.info(f"Upload response: status={resp.status_code}")
             if 200 <= resp.status_code < 300:
                 fid: str | None = None
                 with suppress(json.JSONDecodeError):
