@@ -190,6 +190,8 @@ def process_corpus_impl(
 
 def process_corpus(job_id: str, params: dict[str, object]) -> dict[str, object]:
     """RQ job entry point. Loads deps from env and delegates to the impl."""
+    from api.logging import setup_logging
+    setup_logging()  # Initialize logging for worker process
     settings = Settings.from_env()
     logger = get_logger(__name__)
     client = Redis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
