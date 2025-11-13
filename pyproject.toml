@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
     # API service dependencies
     "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.30.0",
+    "hypercorn>=0.18.0",
     "pydantic>=2.9.0",
     "redis>=5.2.0",
     "rq>=2.0.0",
@@ -123,7 +123,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.115.0"
-uvicorn = {extras = ["standard"], version = "^0.32.0"}
+hypercorn = "^0.18.0"
 pydantic = "^2.9.0"
 redis = "^5.2.0"
 rq = "^2.0.0"
