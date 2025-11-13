@@ -128,18 +128,7 @@ def process_corpus_impl(
                     },
                 )
 
-    redis.hset(
-        f"job:{job_id}",
-        mapping={
-            "status": "completed",
-            "updated_at": datetime.utcnow().isoformat(),
-            "progress": "100",
-            "message": "done",
-        },
-    )
-    logger.info("Job completed", extra={"job_id": job_id})
-
-    # Optional: upload result to data-bank-api and record file_id (non-blocking)
+    # Upload result to data-bank-api and record file_id before marking complete
     url_cfg: Final[str] = settings.data_bank_api_url
     key_cfg: Final[str] = settings.data_bank_api_key
     logger.info(f"UPLOAD CHECK: url={url_cfg!r} key_len={len(key_cfg)}")
@@ -195,6 +184,18 @@ def process_corpus_impl(
 
         with suppress(Exception):
             _try_upload()
+
+    # Mark job as completed AFTER upload attempt
+    redis.hset(
+        f"job:{job_id}",
+        mapping={
+            "status": "completed",
+            "updated_at": datetime.utcnow().isoformat(),
+            "progress": "100",
+            "message": "done",
+        },
+    )
+    logger.info("Job completed", extra={"job_id": job_id})
     return {"job_id": job_id, "status": "completed", "result": str(out_path)}
 
 
