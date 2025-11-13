@@ -85,28 +85,28 @@ Deployment: GitHub Actions (YAML workflow)
 - Quality: mypy --strict, ruff, and guard checks green; tests cover success and failure branches; 100% statements and branches.
 
 ```
-┌─────────────────────────────────────────────┐
-│              Railway Platform               │
-│                                             │
+┌────────────────────────────────────────────┐
+│              Railway Platform              │
+│                                            │
 │  ┌──────────────────────────────────────┐  │
-│  │  API Service (FastAPI + Uvicorn)     │  │
+│  │  API Service (FastAPI + Hypercorn)   │  │
 │  │  Port: $PORT                         │  │
 │  │                                      │  │
 │  │  Endpoints:                          │  │
 │  │  • POST /api/v1/jobs                 │  │
 │  │  • GET  /api/v1/jobs/{job_id}        │  │
 │  │  • GET  /api/v1/jobs/{job_id}/result │  │
-│  │  • GET  /api/v1/health                │  │
+│  │  • GET  /api/v1/health               │  │
 │  └────────────┬─────────────────────────┘  │
-│               │                             │
-│               ▼                             │
+│               │                            │
+│               ▼                            │
 │  ┌──────────────────────────────────────┐  │
 │  │  Redis (Railway Addon)               │  │
 │  │  • Job queue (RQ)                    │  │
 │  │  • Job status cache                  │  │
 │  └────────────┬─────────────────────────┘  │
-│               │                             │
-│               ▼                             │
+│               │                            │
+│               ▼                            │
 │  ┌──────────────────────────────────────┐  │
 │  │  RQ Worker (Background Service)      │  │
 │  │                                      │  │
@@ -116,15 +116,15 @@ Deployment: GitHub Actions (YAML workflow)
 │  │  3. Transliterate to IPA             │  │
 │  │  4. Save result                      │  │
 │  └────────────┬─────────────────────────┘  │
-│               │                             │
-│               ▼                             │
+│               │                            │
+│               ▼                            │
 │  ┌──────────────────────────────────────┐  │
 │  │  Persistent Volume                   │  │
 │  │  /data/                              │  │
 │  │  ├── models/lid.176.bin (126 MB)     │  │
 │  │  └── results/{job_id}.txt            │  │
 │  └──────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
+└────────────────────────────────────────────┘
 ```
 
 ---
