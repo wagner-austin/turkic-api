@@ -149,53 +149,59 @@ def process_corpus_impl(
             pass
 
         def _try_upload() -> None:
-            headers = {"X-API-Key": key_cfg, "X-Request-ID": job_id}
-            upload_url = f"{url_cfg.rstrip('/')}/files"
-            logger.info(f"Starting upload to {upload_url}")
-            with out_path.open("rb") as f:
-                files = {"file": (f"{job_id}.txt", f, "text/plain; charset=utf-8")}
-                logger.info(f"Sending POST request, file size: {out_path.stat().st_size}")
-                resp = httpx.post(
-                    upload_url, headers=headers, files=files, timeout=600.0
-                )
-            logger.info(f"Upload response: status={resp.status_code}")
-            if 200 <= resp.status_code < 300:
-                fid: str | None = None
-                with suppress(json.JSONDecodeError):
-                    obj = json.loads(resp.text)
-                    if isinstance(obj, dict):
-                        v = obj.get("file_id")
-                        if isinstance(v, str) and v.strip() != "":
-                            fid = v
-                if fid is not None:
-                    redis.hset(f"job:{job_id}", {"file_id": fid})
+            try:
+                headers = {"X-API-Key": key_cfg, "X-Request-ID": job_id}
+                upload_url = f"{url_cfg.rstrip('/')}/files"
+                logger.info(f"Starting upload to {upload_url}")
+                with out_path.open("rb") as f:
+                    files = {"file": (f"{job_id}.txt", f, "text/plain; charset=utf-8")}
                     logger.info(
-                        "data-bank upload succeeded",
-                        extra={"job_id": job_id, "file_id": fid},
+                        f"Sending POST request, file size: {out_path.stat().st_size}"
                     )
+                    resp = httpx.post(
+                        upload_url, headers=headers, files=files, timeout=600.0
+                    )
+                logger.info(f"Upload response: status={resp.status_code}")
+                if 200 <= resp.status_code < 300:
+                    fid: str | None = None
+                    with suppress(json.JSONDecodeError):
+                        obj = json.loads(resp.text)
+                        if isinstance(obj, dict):
+                            v = obj.get("file_id")
+                            if isinstance(v, str) and v.strip() != "":
+                                fid = v
+                    if fid is not None:
+                        redis.hset(f"job:{job_id}", {"file_id": fid})
+                        logger.info(
+                            "data-bank upload succeeded",
+                            extra={"job_id": job_id, "file_id": fid},
+                        )
+                    else:
+                        logger.error(
+                            "data-bank upload missing file_id",
+                            extra={"job_id": job_id, "status": resp.status_code},
+                        )
+                        raise _UploadError("missing file_id in response")
                 else:
                     logger.error(
-                        "data-bank upload missing file_id",
+                        "data-bank upload failed",
                         extra={"job_id": job_id, "status": resp.status_code},
                     )
-                    raise _UploadError("missing file_id in response")
-            else:
-                logger.error(
-                    "data-bank upload failed",
-                    extra={"job_id": job_id, "status": resp.status_code},
-                )
-                raise _UploadError(f"upload failed: {resp.status_code}")
+                    raise _UploadError(f"upload failed: {resp.status_code}")
+            except Exception as exc:
+                logger.error(f"data-bank upload exception: {type(exc).__name__}: {exc}")
+                # Re-raise for guard compliance; outer suppress prevents job failure
+                raise
 
-        try:
+        with suppress(Exception):
             _try_upload()
-        except Exception as exc:
-            logger.error(f"data-bank upload exception: {type(exc).__name__}: {exc}")
     return {"job_id": job_id, "status": "completed", "result": str(out_path)}
 
 
 def process_corpus(job_id: str, params: dict[str, object]) -> dict[str, object]:
     """RQ job entry point. Loads deps from env and delegates to the impl."""
     from api.logging import setup_logging
+
     setup_logging()  # Initialize logging for worker process
     settings = Settings.from_env()
     logger = get_logger(__name__)
