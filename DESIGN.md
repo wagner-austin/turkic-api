@@ -70,14 +70,14 @@ Deployment: GitHub Actions (YAML workflow)
 ---
 
 ## Architecture
-### Integration: data-bank-api (Strict, Typed)
+### Integration: data-bank-api (Strict, Typed, No Fallback)
 
 - Purpose: Publish completed job outputs to data-bank-api and surface a stable `file_id` to downstream services.
-- Upload Semantics:
-  - After a job transitions to `completed`, upload the result file via `POST /files` with `X-API-Key`.
+- Upload Semantics (no back-compat, no fallback):
+  - After a job finishes processing but **before** it is marked `completed`, upload the result file via `POST /files` with `X-API-Key`.
   - The server generates `file_id` (sha256 hex); clients must not derive IDs from filenames.
   - On success, store `file_id` in the Redis job hash; include it in `JobStatus` responses.
-  - On failure (auth/network/5xx), log error and keep job `completed`; `/result` endpoint continues to serve the file locally.
+  - On any failure (invalid config, auth/network/5xx, malformed JSON, missing `file_id`), raise a typed `UploadError`, mark the job `failed`, and **do not** expose a local-only fallback via `/result`.
 - Settings (env):
   - `TURKIC_DATA_BANK_API_URL`, `TURKIC_DATA_BANK_API_KEY`.
 - API Models:

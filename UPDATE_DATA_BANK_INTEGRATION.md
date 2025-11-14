@@ -19,11 +19,16 @@ Add fields to the `Settings` dataclass:
 
 ### Job Implementation
 In `api/jobs.py` (impl path):
-- After writing the result file and marking the job `completed`, if both URL and KEY are set:
+- After writing the result file but **before** marking the job `completed`:
+  - Validate that both `data_bank_api_url` and `data_bank_api_key` are non-empty; if not, raise `UploadError("data-bank configuration missing")`.
   - `httpx.post("{url}/files", headers={"X-API-Key": key}, files={"file": (f"{job_id}.txt", f, "text/plain; charset=utf-8")}, timeout=600.0)`
   - Parse `{ "file_id": "...", ... }` from response.
   - Store `file_id` in Redis hash for this job.
-  - Log success/failure; failure MUST NOT fail the job (result remains available locally via `/result`).
+  - Mark the job `completed` **only if** upload and `file_id` persistence succeed.
+- On any failure (invalid config, HTTP error, malformed JSON, missing `file_id`):
+  - Log a structured error with `job_id` and HTTP status / error code.
+  - Set job status to `failed` and persist an error code in Redis.
+  - Raise `UploadError` so the RQ job is treated as failed (no local-only fallback).
 
 ### API Models
 In `api/models.py`:
@@ -49,5 +54,5 @@ In `api/models.py`:
 - Keep coverage at 100% for statements and branches for all touched areas.
 
 ## Notes
-- This flow complements the existing `/result` endpoint. Upload failure does not break job completion.
-- Use the internal Railway URL for reliability/perf and X‑API‑Key for auth.
+- This flow removes legacy/local fallbacks: a job that cannot be uploaded to data-bank-api is considered `failed` and does not expose a `completed`+local result.
+- Use the internal Railway URL for reliability/perf and X-API-Key for auth.
