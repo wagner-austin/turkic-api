@@ -21,11 +21,17 @@ class _RedisStub:
         return 1
 
 
-def test_process_corpus_impl_creates_file_and_updates_status(tmp_path: Path) -> None:
+def test_process_corpus_impl_creates_file_and_updates_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     pytest.importorskip("icu")
     redis = _RedisStub()
     settings = Settings(
-        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+        redis_url="redis://localhost:6379/0",
+        data_dir=str(tmp_path),
+        environment="test",
+        data_bank_api_url="http://db",
+        data_bank_api_key="k",
     )
     logger = logging.getLogger(__name__)
 
@@ -33,6 +39,15 @@ def test_process_corpus_impl_creates_file_and_updates_status(tmp_path: Path) -> 
     corpus_dir = tmp_path / "corpus"
     corpus_dir.mkdir(exist_ok=True)
     (corpus_dir / "oscar_kk.txt").write_text("Қазақстан\n", encoding="utf-8")
+
+    class _Resp:
+        def __init__(self) -> None:
+            self.status_code = 201
+            self.text = '{"file_id":"deadbeef"}'
+
+    # Avoid real network in test by stubbing httpx.post
+    monkeypatch.setattr("api.jobs.httpx.post", lambda *a, **k: _Resp())
+
     params = {
         "source": "oscar",
         "language": "kk",

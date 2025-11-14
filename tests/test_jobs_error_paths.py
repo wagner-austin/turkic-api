@@ -104,7 +104,11 @@ def test_progress_updates_every_50(
 ) -> None:
     redis = _RedisStub()
     settings = Settings(
-        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+        redis_url="redis://localhost:6379/0",
+        data_dir=str(tmp_path),
+        environment="test",
+        data_bank_api_url="http://db",
+        data_bank_api_key="k",
     )
     logger = logging.getLogger(__name__)
 
@@ -123,6 +127,13 @@ def test_progress_updates_every_50(
         "ensure_corpus_file",
         lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
     )
+
+    class _Resp:
+        def __init__(self) -> None:
+            self.status_code = 201
+            self.text = '{"file_id":"deadbeef"}'
+
+    monkeypatch.setattr("api.jobs.httpx.post", lambda *a, **k: _Resp())
 
     params = {
         "source": "oscar",
@@ -229,7 +240,11 @@ def test_valid_script_normalizes_and_passes(
 ) -> None:
     redis = _RedisStub()
     settings = Settings(
-        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+        redis_url="redis://localhost:6379/0",
+        data_dir=str(tmp_path),
+        environment="test",
+        data_bank_api_url="http://db",
+        data_bank_api_key="k",
     )
     logger = logging.getLogger(__name__)
 
@@ -246,6 +261,13 @@ def test_valid_script_normalizes_and_passes(
         return tmp_path / "corpus" / "oscar_kk.txt"
 
     monkeypatch.setattr(jobs_mod, "ensure_corpus_file", _ensure)
+
+    class _Resp2:
+        def __init__(self) -> None:
+            self.status_code = 201
+            self.text = '{"file_id":"deadbeef"}'
+
+    monkeypatch.setattr("api.jobs.httpx.post", lambda *a, **k: _Resp2())
 
     params = {
         "source": "oscar",
@@ -267,7 +289,11 @@ def test_blank_script_string_is_treated_as_none(
 ) -> None:
     redis = _RedisStub()
     settings = Settings(
-        redis_url="redis://localhost:6379/0", data_dir=str(tmp_path), environment="test"
+        redis_url="redis://localhost:6379/0",
+        data_dir=str(tmp_path),
+        environment="test",
+        data_bank_api_url="http://db",
+        data_bank_api_key="k",
     )
     logger = logging.getLogger(__name__)
 
@@ -284,6 +310,13 @@ def test_blank_script_string_is_treated_as_none(
         return tmp_path / "corpus" / "oscar_kk.txt"
 
     monkeypatch.setattr(jobs_mod, "ensure_corpus_file", _ensure)
+
+    class _Resp3:
+        def __init__(self) -> None:
+            self.status_code = 201
+            self.text = '{"file_id":"deadbeef"}'
+
+    monkeypatch.setattr("api.jobs.httpx.post", lambda *a, **k: _Resp3())
 
     params = {
         "source": "oscar",

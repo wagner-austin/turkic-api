@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
 from typing import Final
@@ -16,6 +15,10 @@ from core.corpus import LocalCorpusService
 from core.corpus_download import ensure_corpus_file
 from core.models import ProcessSpec, is_language, is_source
 from core.translit import to_ipa
+
+
+class UploadError(Exception):
+    """Raised when upload to data-bank-api fails."""
 
 
 def process_corpus_impl(
@@ -128,64 +131,101 @@ def process_corpus_impl(
                     },
                 )
 
-    # Upload result to data-bank-api and record file_id before marking complete
+    # Upload result to data-bank-api and record file_id before marking complete.
+    # No fallback: if upload or configuration fails, the job is marked failed.
     url_cfg: Final[str] = settings.data_bank_api_url
     key_cfg: Final[str] = settings.data_bank_api_key
-    logger.info(f"UPLOAD CHECK: url={url_cfg!r} key_len={len(key_cfg)}")
-    if url_cfg.strip() != "" and key_cfg.strip() != "":
+    if url_cfg.strip() == "" or key_cfg.strip() == "":
+        logger.error(
+            "data-bank configuration missing",
+            extra={
+                "job_id": job_id,
+                "has_url": bool(url_cfg.strip()),
+                "has_key": bool(key_cfg.strip()),
+            },
+        )
+        redis.hset(
+            f"job:{job_id}",
+            mapping={
+                "status": "failed",
+                "updated_at": datetime.utcnow().isoformat(),
+                "message": "upload_failed",
+                "error": "config_missing",
+            },
+        )
+        raise UploadError("data-bank configuration missing")
 
-        class _UploadError(Exception):
-            pass
+    headers = {"X-API-Key": key_cfg, "X-Request-ID": job_id}
+    upload_url = f"{url_cfg.rstrip('/')}/files"
+    logger.info(
+        "Starting upload to data-bank-api", extra={"job_id": job_id, "url": upload_url}
+    )
 
-        def _try_upload() -> None:
-            try:
-                headers = {"X-API-Key": key_cfg, "X-Request-ID": job_id}
-                upload_url = f"{url_cfg.rstrip('/')}/files"
-                logger.info(f"Starting upload to {upload_url}")
-                with out_path.open("rb") as f:
-                    files = {"file": (f"{job_id}.txt", f, "text/plain; charset=utf-8")}
-                    logger.info(
-                        f"Sending POST request, file size: {out_path.stat().st_size}"
-                    )
-                    resp = httpx.post(
-                        upload_url, headers=headers, files=files, timeout=600.0
-                    )
-                logger.info(f"Upload response: status={resp.status_code}")
-                if 200 <= resp.status_code < 300:
-                    fid: str | None = None
-                    with suppress(json.JSONDecodeError):
-                        obj = json.loads(resp.text)
-                        if isinstance(obj, dict):
-                            v = obj.get("file_id")
-                            if isinstance(v, str) and v.strip() != "":
-                                fid = v
-                    if fid is not None:
-                        redis.hset(f"job:{job_id}", "file_id", fid)
-                        logger.info(
-                            "data-bank upload succeeded",
-                            extra={"job_id": job_id, "file_id": fid},
-                        )
-                    else:
-                        logger.error(
-                            "data-bank upload missing file_id",
-                            extra={"job_id": job_id, "status": resp.status_code},
-                        )
-                        raise _UploadError("missing file_id in response")
-                else:
-                    logger.error(
-                        "data-bank upload failed",
-                        extra={"job_id": job_id, "status": resp.status_code},
-                    )
-                    raise _UploadError(f"upload failed: {resp.status_code}")
-            except Exception as exc:
-                logger.error(f"data-bank upload exception: {type(exc).__name__}: {exc}")
-                # Re-raise for guard compliance; outer suppress prevents job failure
-                raise
+    with out_path.open("rb") as f:
+        files = {"file": (f"{job_id}.txt", f, "text/plain; charset=utf-8")}
+        resp = httpx.post(upload_url, headers=headers, files=files, timeout=600.0)
 
-        with suppress(Exception):
-            _try_upload()
+    logger.info(
+        "Upload response received", extra={"job_id": job_id, "status": resp.status_code}
+    )
+    if not (200 <= resp.status_code < 300):
+        redis.hset(
+            f"job:{job_id}",
+            mapping={
+                "status": "failed",
+                "updated_at": datetime.utcnow().isoformat(),
+                "message": "upload_failed",
+                "error": f"status_{resp.status_code}",
+            },
+        )
+        logger.error(
+            "data-bank upload failed",
+            extra={"job_id": job_id, "status": resp.status_code},
+        )
+        raise UploadError(f"upload failed with status {resp.status_code}")
 
-    # Mark job as completed AFTER upload attempt
+    obj = json.loads(resp.text)
+    if not isinstance(obj, dict):
+        redis.hset(
+            f"job:{job_id}",
+            mapping={
+                "status": "failed",
+                "updated_at": datetime.utcnow().isoformat(),
+                "message": "upload_failed",
+                "error": "non_dict_response",
+            },
+        )
+        logger.error("data-bank upload response not dict", extra={"job_id": job_id})
+        raise UploadError("upload response is not a dict")
+
+    v = obj.get("file_id")
+    if not isinstance(v, str) or v.strip() == "":
+        redis.hset(
+            f"job:{job_id}",
+            mapping={
+                "status": "failed",
+                "updated_at": datetime.utcnow().isoformat(),
+                "message": "upload_failed",
+                "error": "missing_file_id",
+            },
+        )
+        logger.error(
+            "data-bank upload missing file_id",
+            extra={"job_id": job_id, "status": resp.status_code},
+        )
+        raise UploadError("missing or invalid file_id in response")
+
+    fid = v.strip()
+    redis.hset(
+        f"job:{job_id}",
+        mapping={
+            "file_id": fid,
+            "upload_status": "uploaded",
+        },
+    )
+    logger.info("data-bank upload succeeded", extra={"job_id": job_id, "file_id": fid})
+
+    # Mark job as completed AFTER upload succeeds
     redis.hset(
         f"job:{job_id}",
         mapping={

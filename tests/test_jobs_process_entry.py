@@ -24,8 +24,10 @@ class _RedisStub:
 
 
 def test_process_corpus_entry(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    # Ensure data dir
+    # Ensure data dir and data-bank config
     monkeypatch.setenv("TURKIC_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("TURKIC_DATA_BANK_API_URL", "http://db")
+    monkeypatch.setenv("TURKIC_DATA_BANK_API_KEY", "k")
 
     # Stub Redis.from_url
     stub = _RedisStub()
@@ -49,6 +51,13 @@ def test_process_corpus_entry(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
         "ensure_corpus_file",
         lambda *a, **k: tmp_path / "corpus" / "oscar_kk.txt",
     )
+
+    class _Resp:
+        def __init__(self) -> None:
+            self.status_code = 201
+            self.text = '{"file_id":"deadbeef"}'
+
+    monkeypatch.setattr("api.jobs.httpx.post", lambda *a, **k: _Resp())
 
     params = {
         "source": "oscar",

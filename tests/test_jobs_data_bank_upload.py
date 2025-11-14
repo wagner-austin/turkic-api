@@ -87,10 +87,11 @@ def test_upload_success_records_file_id(
     assert out["status"] == "completed"
     h = redis.hashes.get("job:jid1", {})
     assert h.get("file_id") == "deadbeef"
+    assert h.get("upload_status") == "uploaded"
 
 
 @pytest.mark.parametrize("status", [400, 401, 403, 500])
-def test_upload_failure_does_not_break_job(
+def test_upload_failure_breaks_job(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, status: int
 ) -> None:
     _seed_processing(monkeypatch, tmp_path)
@@ -112,24 +113,25 @@ def test_upload_failure_does_not_break_job(
     )
     logger = logging.getLogger(__name__)
 
-    out = jobs_mod.process_corpus_impl(
-        "jid2",
-        {
-            "source": "oscar",
-            "language": "kk",
-            "max_sentences": 1,
-            "transliterate": True,
-            "confidence_threshold": 0.9,
-        },
-        redis=redis,
-        settings=settings,
-        logger=logger,
-    )
-    assert out["status"] == "completed"
-    assert "file_id" not in redis.hashes.get("job:jid2", {})
+    with pytest.raises(
+        jobs_mod.UploadError, match=f"upload failed with status {status}"
+    ):
+        jobs_mod.process_corpus_impl(
+            "jid2",
+            {
+                "source": "oscar",
+                "language": "kk",
+                "max_sentences": 1,
+                "transliterate": True,
+                "confidence_threshold": 0.9,
+            },
+            redis=redis,
+            settings=settings,
+            logger=logger,
+        )
 
 
-def test_upload_2xx_missing_file_id_is_logged(
+def test_upload_2xx_missing_file_id_raises(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _seed_processing(monkeypatch, tmp_path)
@@ -151,24 +153,23 @@ def test_upload_2xx_missing_file_id_is_logged(
     )
     logger = logging.getLogger(__name__)
 
-    out = jobs_mod.process_corpus_impl(
-        "jid3",
-        {
-            "source": "oscar",
-            "language": "kk",
-            "max_sentences": 1,
-            "transliterate": True,
-            "confidence_threshold": 0.9,
-        },
-        redis=redis,
-        settings=settings,
-        logger=logger,
-    )
-    assert out["status"] == "completed"
-    assert "file_id" not in redis.hashes.get("job:jid3", {})
+    with pytest.raises(jobs_mod.UploadError, match="missing or invalid file_id"):
+        jobs_mod.process_corpus_impl(
+            "jid3",
+            {
+                "source": "oscar",
+                "language": "kk",
+                "max_sentences": 1,
+                "transliterate": True,
+                "confidence_threshold": 0.9,
+            },
+            redis=redis,
+            settings=settings,
+            logger=logger,
+        )
 
 
-def test_upload_2xx_non_dict_response(
+def test_upload_2xx_non_dict_response_raises(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _seed_processing(monkeypatch, tmp_path)
@@ -190,18 +191,55 @@ def test_upload_2xx_non_dict_response(
     )
     logger = logging.getLogger(__name__)
 
-    out = jobs_mod.process_corpus_impl(
-        "jid4",
-        {
-            "source": "oscar",
-            "language": "kk",
-            "max_sentences": 1,
-            "transliterate": True,
-            "confidence_threshold": 0.9,
-        },
-        redis=redis,
-        settings=settings,
-        logger=logger,
+    with pytest.raises(jobs_mod.UploadError, match="upload response is not a dict"):
+        jobs_mod.process_corpus_impl(
+            "jid4",
+            {
+                "source": "oscar",
+                "language": "kk",
+                "max_sentences": 1,
+                "transliterate": True,
+                "confidence_threshold": 0.9,
+            },
+            redis=redis,
+            settings=settings,
+            logger=logger,
+        )
+
+
+def test_upload_config_missing_marks_job_failed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _seed_processing(monkeypatch, tmp_path)
+
+    # Leave data_bank_api_url and key empty to trigger config error
+    redis = _RedisStub()
+    settings = Settings(
+        redis_url="redis://localhost:6379/0",
+        data_dir=str(tmp_path),
+        environment="test",
+        data_bank_api_url="",
+        data_bank_api_key="",
     )
-    assert out["status"] == "completed"
-    assert "file_id" not in redis.hashes.get("job:jid4", {})
+    logger = logging.getLogger(__name__)
+
+    with pytest.raises(jobs_mod.UploadError, match="data-bank configuration missing"):
+        jobs_mod.process_corpus_impl(
+            "jid_cfg",
+            {
+                "source": "oscar",
+                "language": "kk",
+                "max_sentences": 1,
+                "transliterate": True,
+                "confidence_threshold": 0.9,
+            },
+            redis=redis,
+            settings=settings,
+            logger=logger,
+        )
+
+    h = redis.hashes.get("job:jid_cfg")
+    assert h is not None
+    assert h.get("status") == "failed"
+    assert h.get("message") == "upload_failed"
+    assert h.get("error") == "config_missing"

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 from uuid import uuid4
 
 from redis import Redis
@@ -80,6 +81,12 @@ class JobService:
 
         result_url: str | None = None
         file_id: str | None = data.get("file_id") if "file_id" in data else None
+        upload_status_raw = (
+            data.get("upload_status") if "upload_status" in data else None
+        )
+        upload_status: Literal["uploaded"] | None = (
+            "uploaded" if upload_status_raw == "uploaded" else None
+        )
         if status == "completed" and self._result_path(job_id).exists():
             result_url = f"/api/v1/jobs/{job_id}/result"
 
@@ -90,6 +97,7 @@ class JobService:
             message=message,
             result_url=result_url,
             file_id=file_id,
+            upload_status=upload_status,
             created_at=created_at,
             updated_at=updated_at,
             error=error,
