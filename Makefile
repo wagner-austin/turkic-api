@@ -86,9 +86,9 @@ install: pre-install lock
 	@echo "Verifying installation..."
 	@poetry run python -c "import api, core; print('[OK] Installation successful!')" || (echo "ERROR: Installation verification failed" && exit 1)
 
-# Run tests
+# Run tests (parallel via pytest-xdist)
 test: lock | install
-	poetry run python -I -m pytest -vv -p pytest_cov --cov=api --cov=core --cov-branch --cov-report=term-missing
+	poetry run python -I -m pytest -vv -p pytest_cov --cov=api --cov=core --cov-branch --cov-report=term-missing -n auto
 
 check: lint | test
 
